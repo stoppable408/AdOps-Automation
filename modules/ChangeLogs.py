@@ -252,13 +252,16 @@ class ChangeLogs(TraffickingObject):
         return self
                 
         
-    @retry(wait_exponential_multiplier=10, wait_exponential_max=100)     
-    def getCurrentObject(self, changeTime):
+    # @retry(wait_exponential_multiplier=10, wait_exponential_max=100)     
+    def getCurrentObject(self, changeTime,objectType):
+        import re
+        actualObject = re.sub("OBJECT_","",objectType).lower()
+        print(actualObject)
         def get(nextPageToken=None):
             if nextPageToken is None:
-                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/changeLogs?action=action_create&objectType=OBJECT_PLACEMENT&minChangeTime={changeTime}".format(profile_id=self.profile_id, changeTime=changeTime)
+                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/changeLogs?objectType={objectType}&minChangeTime={changeTime}".format(profile_id=self.profile_id, changeTime=changeTime, objectType=objectType)
             else:
-                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/changeLogs?action=action_create&objectType=OBJECT_PLACEMENT&minChangeTime={changeTime}&pageToken={pageToken}".format(profile_id=self.profile_id, changeTime=changeTime,pageToken=nextPageToken)
+                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/changeLogs?&objectType={objectType}&minChangeTime={changeTime}&pageToken={pageToken}".format(profile_id=self.profile_id, changeTime=changeTime,pageToken=nextPageToken,objectType=objectType)
             return self.session
         async def wait():
             async with get().get(self.url, headers=self.auth) as r:
@@ -275,12 +278,13 @@ class ChangeLogs(TraffickingObject):
                             if resp.status == 500:
                                 break
                     changeLog = [x for x in changeLog if "subaccountId" in x.keys()]
-                    changeLog = [x["objectId"] for x in changeLog if x['subaccountId'] == '23262' and "_SS_" in x['newValue']] 
-                    self.logs = changeLog   
-                    print("%s total number of placements found created after %s" % (len(changeLog), changeTime))
+                    changeLog = [x for x in changeLog if x['subaccountId'] == '23262']
+                    setattr(self,actualObject,changeLog)
+                    # self.logs = changeLog  
+                    print("%s total number of %s found created after %s" % (len(changeLog), actualObject, changeTime))
                 else:
                     self.handleError(text)
-                    self.logs = []
+                    setattr(self,objectType,[])
         if self.eventLoop == None:
             self.eventLoop = self.asyncio.get_event_loop()
             self.eventLoop.run_until_complete(wait())
