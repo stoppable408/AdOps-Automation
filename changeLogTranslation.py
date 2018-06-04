@@ -27,7 +27,7 @@ def checkSession(obj):
     return obj
 def extractAdInfo(adObject):
     try:
-        hardCutoff = ad.body["deliverySchedule"]["hardCutoff"]
+        hardCutoff = adObject.body["deliverySchedule"]["hardCutoff"]
     except:
         hardCutoff = True
     finalAdObject = {"Ad_ID":adObject.body["id"],
@@ -44,8 +44,8 @@ def extractPlacementInfo(placementObject):
     finalPlacementObject = {
         "Placement_ID":placementObject.body["id"],
         "Placement_Name":placementObject.body["name"],
-        "Placement_Start_Date":placementObject.body["startDate"],
-        "Placement_End_Date":placementObject.body["endDate"],
+        "Placement_Start_Date":placementObject.body["pricingSchedule"]["startDate"],
+        "Placement_End_Date":placementObject.body["pricingSchedule"]["endDate"],
         "Placement_Compatibility":placementObject.body["compatibility"]
     }
     return finalPlacementObject
@@ -78,19 +78,21 @@ for obj in ChangeLogObjects:
 def analyzeAdLogs(ChangeLog):
     def analyzePlacementAssignments(placementArray):
         addArray = [x for x in placementArray if x["action"] == "Add"]
+
         removeArray = [x for x in placementArray if x["action"] == "Remove"]
         for element in addArray:
             placementIDPattern = re.compile('id:(.*,)')
             idString = element["newValue"]
-            idGrouping = re.search(placementIDPattern, idString)
+            idGrouping = re.search(placementIDPattern, idString).group(0)
             placementID = re.sub("id: |,","",idGrouping)
             adId = element["objectId"]
+            currentAd = checkSession(Ad(adId,initialEventLoop,initialSession))
             currentPlacement = checkSession(Placement(placementID,initialEventLoop,initialSession))
-            AdObject = extractAdInfo(checkSession(Ad(adId,initialEventLoop,initialSession)))
+            AdObject = extractAdInfo(currentAd)
             PlacementObject = extractPlacementInfo(currentPlacement)
             SiteObject = Sites(currentPlacement.body['siteId'],initialEventLoop,initialSession)
-            CampaignObject = checkSession(AsyncCampaign(currentPlacement.body["campaignId"],initialEventLoop,initialSession))
-
+            CampaignObject = extractCampaignInfo(checkSession(AsyncCampaign(currentPlacement.body["campaignId"],initialEventLoop,initialSession)))
+            test = 0
 
     def analyzeCreativeAssignments(creativeArray):
         pass
@@ -106,7 +108,7 @@ def analyzeAdLogs(ChangeLog):
         else:
             updateAdInfo(currentField)
 
-
+analyzeAdLogs(initialChangeLog)
             
-test=0
+
 
