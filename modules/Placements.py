@@ -48,7 +48,7 @@ class Placement(TraffickingObject):
                     if payloadText in response:
                         print("{0} updated successfully".format(self.body['name']))
                 else:
-                    print("%s failed to update.".format(self.body['name']))
+                    print("{0} failed to update.".format(self.body['name']))
                     self.handleError(text)
         if self.eventLoop == None:
             self.eventLoop = self.asyncio.get_event_loop()
