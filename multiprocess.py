@@ -54,6 +54,7 @@ def checkSession(session, initialSession):
         return initialSession
         
 def analyzeCampaignList(campaignList, process, queue, p1Num, p2Num):
+    import datetime
     campaignObject = AsyncCampaign(20124958)
     initialSession = campaignObject.session
     initialEventLoop = campaignObject.eventLoop
@@ -133,6 +134,8 @@ def analyzeCampaignList(campaignList, process, queue, p1Num, p2Num):
                     adObject["Ad End Time"] =formatDateTime(ad.body["endTime"])
                     adObject["Hard Cut-Off"] = TrueToYes(hardCutoff)
                     adObject["Creative ID"] = creativeID
+                    timestamp = int(creativeElement.body["lastModifiedInfo"]["time"]) / 1e3
+                    adObject["Creative Date"] = datetime.datetime.fromtimestamp(timestamp).strftime('%m/%d/%y %I:%M %p')
                     adObject["Creative Name"] = creativeName
                     adObject["Creative Type"] = creativeType
                     adObject["Creative Click-Through URL"] = clickThroughURL
@@ -163,7 +166,7 @@ if __name__ == "__main__":
     p2.join()
     import pandas as pd
     df = pd.DataFrame(data=array)
-    df = df[['Campaign Name','Campaign ID','Site','Placement ID','Placement Name','Start Date','End Date','Ad ID','Ad Name','Ad Type','Ad is Active','Ad Start Time','Ad End Time','Hard Cut-Off','Creative ID','Creative Name','Creative Type','Creative Click-Through URL']]
+    df = df[['Campaign Name','Campaign ID','Site','Placement ID','Placement Name','Start Date','End Date','Ad ID','Ad Name','Ad Type','Ad is Active','Ad Start Time','Ad End Time','Hard Cut-Off','Creative ID','Creative Name','Creative Type','Creative Date','Creative Click-Through URL']]
 
     writer = pd.ExcelWriter('Full Report.xlsx',engine='xlsxwriter')
     workbook = writer.book
@@ -184,7 +187,8 @@ if __name__ == "__main__":
             "O1":"Creative ID",
             "P1":"Creative Name",
             "Q1":"Creative Type",
-            "R1":"Creative Click-Through URL"}
+            "R1":"Creative Date",
+            "S1":"Creative Click-Through URL"}
 
     df.to_excel(writer, sheet_name ="Info", index = False)
     worksheet =  writer.sheets['Info']

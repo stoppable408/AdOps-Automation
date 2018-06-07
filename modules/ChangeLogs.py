@@ -72,7 +72,7 @@ class ChangeLogs(TraffickingObject):
             writer.save()
             import os
             directories = os.listdir()
-            reports = [x for x in directories if "Campaign" in x]
+            reports = [x for x in directories if "Campaign.xlsx" in x]
             for report in reports:
                 send_mail.send_email(report, title="Verified Campaigns",recipients=["Lennon.Turner@amnetgroup.com","Kristine.Gillette@carat.com","Mackenzie.VanSteenkiste@carat.com","Holly.Champoux@carat.com"])
         if len(self.logs) > 0:
@@ -231,7 +231,7 @@ class ChangeLogs(TraffickingObject):
             directories = os.listdir()
             reports = [x for x in directories if "Placement" in x]
             for report in reports:
-                send_mail.send_email(report, title="LMA SS Placements",recipients=["Lennon.Turner@amnetgroup.com","Kristine.Gillette@carat.com","Holly.Champoux@carat.com"])
+                send_mail.send_email(report, title="LMA SS Placements",recipients=["Lennon.Turner@amnetgroup.com","Kristine.Gillette@carat.com","Holly.Champoux@carat.com","Ali.Ciaffone@carat.com"])
         from modules.Placements import Placement
         from modules.AsyncCampaign import AsyncCampaign
         changedPlacementsArray = []
