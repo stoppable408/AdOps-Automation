@@ -114,7 +114,6 @@ class ChangeLogs(TraffickingObject):
                 else:
                     self.handleError(text)
                     self.logs = []
-                print(self.logs)
                 
         if self.eventLoop == None:
             self.eventLoop = self.asyncio.get_event_loop()
@@ -218,7 +217,7 @@ class ChangeLogs(TraffickingObject):
             
             writer = pd.ExcelWriter('Placement.xlsx',engine='xlsxwriter')
             workbook = writer.book
-            headerObject = {"A1":"Campaign Name", "B1":"Placement Name"}
+            headerObject = {"A1":"Campaign Name", "B1":"Placement ID", "C1":"Placement Name"}
             format1 =  workbook.add_format({'bg_color': '#0AADE9'})
             
             df.to_excel(writer, sheet_name ="Placements", index = False)
@@ -244,7 +243,7 @@ class ChangeLogs(TraffickingObject):
                 campaign = AsyncCampaign(placement.body['campaignId'], self.eventLoop, self.session)
                 campaignName = campaign.body["name"]
                 if regex.search(campaignName):
-                    changedPlacementsArray.append({"placementName":placement.body["name"],"campaignName":campaign.body['name']})
+                    changedPlacementsArray.append({"placementName":placement.body["name"],"placementID":placement.body["id"],"campaignName":campaign.body['name']})
                     print("%s in %s is currently being updated." % (placement.body["name"],campaign.body['name']))
                     placement.pushStaticClickTracking()
         if len(changedPlacementsArray) > 0:
@@ -292,5 +291,44 @@ class ChangeLogs(TraffickingObject):
             changeLogEvent = self.eventLoop.create_task(wait())
             self.eventLoop.run_until_complete(changeLogEvent)
         return self   
+
+    @retry(wait_exponential_multiplier=10, wait_exponential_max=100)
+    def getAllCampaignChanges(self, changeTime):
+        def get(nextPageToken=None):
+            if nextPageToken is None:
+                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/changeLogs?action=ACTION_UPDATE&objectType=OBJECT_CAMPAIGN&minChangeTime={changeTime}".format(profile_id=self.profile_id, changeTime=changeTime)
+            else:
+                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/changeLogs?action=ACTION_UPDATE&objectType=OBJECT_CAMPAIGN&minChangeTime={changeTime}&pageToken={pageToken}".format(profile_id=self.profile_id, changeTime=changeTime,pageToken=nextPageToken)
+            return self.session
+        
+        async def wait():
+            async with get().get(self.url, headers=self.auth) as r:
+                text = await r.text()
+                if r.status == 200:
+                    response = self.json.loads(text)
+                    changeLog = response["changeLogs"]
+                    while "nextPageToken" in response:
+                        async with get(response["nextPageToken"]).get(self.url, headers=self.auth) as resp:
+                            newText = await resp.text()
+                            if resp.status == 200:
+                                response = self.json.loads(newText)
+                                changeLog.extend(response["changeLogs"])
+                            if resp.status == 500:
+                                break
+                    changeLog = [x for x in changeLog if "subaccountId" in x.keys()]
+                    changeLog = [x for x in changeLog if x['subaccountId'] == '23262'] 
+                    self.logs = changeLog   
+                    print("%s total number of campaigns found updated after %s" % (len(changeLog), changeTime))
+                else:
+                    self.handleError(text)
+                    self.logs = []
+                
+        if self.eventLoop == None:
+            self.eventLoop = self.asyncio.get_event_loop()
+            self.eventLoop.run_until_complete(wait())
+        else:
+            changeLogEvent = self.eventLoop.create_task(wait())
+            self.eventLoop.run_until_complete(changeLogEvent)
+        return self
     def __str__(self):
         return "changeLogs"
