@@ -4,7 +4,7 @@ from retrying import retry
 
 class AsyncCampaign(TraffickingObject):
     
-    @retry(wait_exponential_multiplier=10, wait_exponential_max=100) 
+    # @retry(wait_exponential_multiplier=10, wait_exponential_max=100) 
     def __init__(self, searchString, eventLoop = None, session = None):
          super().__init__()
          if hasattr(self, "session"):

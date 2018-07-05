@@ -2,6 +2,7 @@ from modules.ChangeLogs import ChangeLogs
 from modules.AsyncCampaign import AsyncCampaign
 import re
 import requests
+import pandas as pd
 def getBeginningofWeek():
     from datetime import datetime, timedelta
     currentdate = (datetime.now() - timedelta(days=4)).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -11,8 +12,24 @@ currentDate = getBeginningofWeek()
 changeLog = ChangeLogs()
 test = 0
 #.getNewPlacements(currentDate).activateTrackingAds().modifySSPlacements().getNewCampaigns(currentDate).verifyCampaigns()
-
-
+initialSession = changeLog.session
+initialEventLoop = changeLog.eventLoop
+campaignArray = []
+changeLog.getAllCampaignChanges(currentDate)
+for log in changeLog.logs:
+    if log["fieldName"] == 'End date':
+        campaignID = log["objectId"]
+        Campaign = AsyncCampaign(campaignID,initialEventLoop,initialSession)
+        campaignObject = {"Name":Campaign.body["name"],"ID":campaignID,"Old Date":log["oldValue"],"New Date":log["newValue"]}
+        campaignArray.append(campaignObject)
+if len(campaignArray) > 0:
+    df = pd.DataFrame(data=campaignArray)      
+    df = df[["Name","ID","Old Date","New Date"]]
+    writer = pd.ExcelWriter('Campaign Extension Report.xlsx',engine='xlsxwriter')
+    workbook = writer.book
+    df.to_excel(writer, sheet_name ="Info", index = False)
+    worksheet =  writer.sheets['Info']
+    writer.save()
 # changelog = ChangeLogs().getCurrentObject(currentDate,"OBJECT_CAMPAIGN")
 # endDateChange = [x for x in changelog.campaign if x["fieldName"] == "End date"]
 # test = 0
