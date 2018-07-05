@@ -8,7 +8,9 @@ def getBeginningofWeek():
     return currentdate
 
 currentDate = getBeginningofWeek()
-changeLog = ChangeLogs().getNewPlacements(currentDate).activateTrackingAds().modifySSPlacements().getNewCampaigns(currentDate).verifyCampaigns()
+changeLog = ChangeLogs()
+test = 0
+#.getNewPlacements(currentDate).activateTrackingAds().modifySSPlacements().getNewCampaigns(currentDate).verifyCampaigns()
 
 
 # changelog = ChangeLogs().getCurrentObject(currentDate,"OBJECT_CAMPAIGN")
