@@ -1,5 +1,6 @@
 from v3modules.TraffickingObject import TraffickingObject
 from v3modules.Campaign import Campaign
+import time
 #practice file for getting placement info for tag generation report.
 landingPageArray = []
 advertiserSet ={
@@ -34,10 +35,14 @@ landingpages = traffickingObject.getAllLandingPages().landingPages
 for element in range(0,len(landingpages)):
     print("reading element {number} out of {maxi}".format(number=element,maxi=len(landingpages)))
     page = landingpages[element]
+
     advertiserName = advertiserSet[page["advertiserId"]]
+    # if advertiserName != "US»Chevrolet»Display»A":
+    #     continue
     pageName = page["name"]
     pageID = page["id"]
     url = page["url"]
+    print(url)
     try:
         r = traffickingObject.requests.get(url)
         status_code = r.status_code

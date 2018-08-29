@@ -159,7 +159,7 @@ class AsyncCampaign(TraffickingObject):
     @retry(wait_exponential_multiplier=10, wait_exponential_max=100)     
     def modifyVerification(self):
         self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/campaigns?id={campaign_id}".format(profile_id=self.profile_id, campaign_id=self.body['id'])
-        requestBody = {"adBlockingConfiguration": {"enabled": True,"overrideClickThroughUrl": True,"clickThroughUrl": "http://smokybear.com"}}
+        requestBody = {"adBlockingConfiguration": {"enabled": True,"overrideClickThroughUrl": True,"clickThroughUrl": "https://smokeybear.com/en"}}
         async def wait():
             async with self.session.patch(self.url, headers=self.auth, data=self.json.dumps(requestBody)) as r:
                 text = await r.text()

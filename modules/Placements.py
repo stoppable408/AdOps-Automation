@@ -3,7 +3,7 @@ from retrying import retry
 
 class Placement(TraffickingObject):
     
-    @retry(wait_exponential_multiplier=10, wait_exponential_max=100) 
+    # @retry(wait_exponential_multiplier=10, wait_exponential_max=100) 
     def __init__(self, searchString, eventLoop=None, session=None):
         super().__init__()
 #        print("getting placement {0}".format(searchString))
@@ -109,12 +109,21 @@ class Placement(TraffickingObject):
             self.eventLoop.run_until_complete(placementEvent)
         return self
         
-    def isTrafficked(self):
+    def isTrafficked(self,csdDict):
         import datetime
         from modules.Ad import Ad
         from modules.Creative import Creative
+        from modules.AsyncCampaign import AsyncCampaign
+        import numpy
         currentMonth = datetime.datetime.now().strftime("%B").lower()
         currentDate = datetime.datetime.now()
+        def getCSDCreatives():
+            campaign = checkSession(AsyncCampaign(self.body["campaignId"],initialEventLoop,initialSession), initialSession)
+            df = csdDict[campaign.body["name"].strip()]
+            creativeArray = df.loc[df["Id"] == numpy.int64(self.body["id"])].iloc[0].values.tolist()
+            creativeArray = creativeArray[9:len(creativeArray)]
+            creativeArray = [x for x in creativeArray if isinstance(x,str)]
+            return creativeArray
         def formatDateTime(datetimeString):
             import datetime
             date = datetimeString.split('T')[0]
@@ -166,7 +175,19 @@ class Placement(TraffickingObject):
                 creativeElement = Creative(creativeID,initialEventLoop, initialSession)
                 initialSession = checkSession(creativeElement.session, initialSession)
                 creativeName = creativeElement.body["name"]
+                csdCreatives = getCSDCreatives()
 
+                creativeNameToTest = "»".join(creativeName.split("»")[:len(creativeName.split("»"))-2])
+                for element in csdCreatives:
+                    creativeTestingString = "»".join(element.split("»")[:len(element.split("»"))-2])
+                    if creativeNameToTest == creativeTestingString:
+                        self.trafficked = True
+                        self.creativeName = creativeName
+                        self.adStart = formatDateTime(ad.body["startTime"])
+                        self.adEnd= formatDateTime(ad.body["endTime"])
+                        timestamp = int(creativeElement.body["lastModifiedInfo"]["time"]) / 1e3
+                        self.creativeDate = datetime.datetime.fromtimestamp(timestamp).strftime('%m/%d/%y %I:%M %p')
+                        return self
                 if currentMonth in creativeName.lower():
                     self.trafficked = True
                     self.creativeName = creativeName

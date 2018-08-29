@@ -88,9 +88,44 @@ class TraffickingObject():
             self.allCampaigns = []
         return self
 
+    def getAdsByAdvertiser(self,advertiserID):
+        def get(nextPageToken=None):
+            import urllib
+            import re
+            if "pageToken" in self.url:
+                pattern = re.compile("&pageToken(.*)")
+                self.url = re.sub(pattern,"",self.url)
+            nextPageToken = urllib.parse.quote(nextPageToken)
+            self.url = self.url + "&pageToken={pageToken}".format(pageToken=nextPageToken)
+            return self
+        self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/ads?advertiserId={advertiserID}&active=True".format(profile_id=self.profile_id,advertiserID=advertiserID)
+        r = self.requests.get(self.url, headers=self.auth)
+        text = r.text
+        tokenSet = set()
+        if r.status_code == 200:
+            response = self.json.loads(text)
+            ads = response["ads"]
+            while "nextPageToken" in response:
+                print(response["nextPageToken"])
+                # print(tokenSet)
+                print(len(ads))
+                print(self.url)
+                if response["nextPageToken"] in tokenSet:
+                    break
+                tokenSet.add(response["nextPageToken"])
+                resp = get(response["nextPageToken"]).requests.get(self.url, headers=self.auth)
+                newText = resp.text
+                self.test = resp
+                if resp.status_code == 200:
+                    response = self.json.loads(newText)
+                    ads.extend(response["ads"])
+                else:
+                    print(newText)
+                    break
+                    self.handleError(text)
+            self.ads = ads
+            return self
 
-
-    # @retry(wait_exponential_multiplier=10, wait_exponential_max=100)           
     def getAllLandingPages(self):
         def get(nextPageToken=None):
             import urllib
@@ -130,11 +165,44 @@ class TraffickingObject():
                     response = self.json.loads(newText)
                     landingpages.extend(response["landingPages"])
                 else:
-                    print(newText)
                     break
                     self.handleError(text)
             self.landingPages =getFinalList(landingpages)
         else:
             self.handleError(text)
             self.landingPages = []
+        return self
+
+    def getAllCreatives(self):
+        def get(nextPageToken=None):
+            if nextPageToken is None:
+                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/creatives?campaignId={campaign_id}".format(profile_id=self.profile_id,campaign_id=self.body["id"])
+            else:
+                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/creatives?pageToken={pageToken}".format(profile_id=self.profile_id,pageToken = nextPageToken)
+            return self.session
+        async def wait():
+            async with get().get(self.url, headers=self.auth) as r:
+                text = await r.text()
+                if r.status == 200:
+                    response = self.json.loads(text)
+                    creativeList = response["creatives"]
+                    while "nextPageToken" in response:
+                        async with get(response["nextPageToken"]).get(self.url, headers=self.auth) as resp:
+                            newText = await resp.text()
+                            if resp.status == 200:
+                                response = self.json.loads(newText)
+                                creativeList.extend(response["creatives"])
+                            else:
+                                break
+                    self.allCreatives = creativeList
+                else:
+                    self.handleError(text)
+                    self.allCreatives = []
+                    
+        if self.eventLoop == None:
+            self.eventLoop = self.asyncio.get_event_loop()
+            self.eventLoop.run_until_complete(wait())
+        else:
+            placementEvent = self.eventLoop.create_task(wait())
+            self.eventLoop.run_until_complete(placementEvent)
         return self

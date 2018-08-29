@@ -29,10 +29,8 @@ class TraffickingObject(metaclass=ABCMeta):
         from oauth2client import file as oauthFile
       
         try:
-            if "lturner01" in os.getcwd():
-                storage = oauthFile.Storage(os.getcwd() + "/modules/dfareporting.dat")
-            else:
-                storage = oauthFile.Storage("/home/techops/AdOps_Automation/modules/dfareporting.dat")
+            
+            storage = oauthFile.Storage(os.getcwd() + "/modules/dfareporting.dat")
             credentials = storage.get()
             credentials.refresh(httplib2.Http())
             self.profile_id, self.auth = 2532624 , {'Content-type': 'application/json', "Authorization": "OAuth %s" % credentials.access_token}

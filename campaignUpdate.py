@@ -5,13 +5,11 @@ import requests
 import pandas as pd
 def getBeginningofWeek():
     from datetime import datetime, timedelta
-    currentdate = (datetime.now() - timedelta(days=4)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    currentdate = (datetime.now() - timedelta(days=6)).strftime("%Y-%m-%dT%H:%M:%SZ")
     return currentdate
 
 currentDate = getBeginningofWeek()
-changeLog = ChangeLogs()
-test = 0
-#.getNewPlacements(currentDate).activateTrackingAds().modifySSPlacements().getNewCampaigns(currentDate).verifyCampaigns()
+changeLog = ChangeLogs().getNewPlacements(currentDate).activateTrackingAds().modifySSPlacements().getNewCampaigns(currentDate).verifyCampaigns()
 initialSession = changeLog.session
 initialEventLoop = changeLog.eventLoop
 campaignArray = []
