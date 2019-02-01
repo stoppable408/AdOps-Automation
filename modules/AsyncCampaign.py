@@ -15,7 +15,7 @@ class AsyncCampaign(TraffickingObject):
         
     @retry(wait_exponential_multiplier=10, wait_exponential_max=100)     
     def getLandingPages(self):
-        self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/campaigns/{campaignId}/landingPages".format(profile_id=self.profile_id,campaignId=self.body["id"])
+        self.url = "https://www.googleapis.com/dfareporting/v.30/userprofiles/{profile_id}/campaigns/{campaignId}/landingPages".format(profile_id=self.profile_id,campaignId=self.body["id"])
         async def wait():
             async with self.session.get(self.url, headers=self.auth) as r:
                 text = await r.text()
@@ -35,7 +35,7 @@ class AsyncCampaign(TraffickingObject):
         
     @retry(wait_exponential_multiplier=10, wait_exponential_max=100)     
     def getPlacementList(self):
-        self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/placements?campaignIds={campaignId}".format(profile_id=self.profile_id,campaignId=self.body["id"])
+        self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/placements?campaignIds={campaignId}".format(profile_id=self.profile_id,campaignId=self.body["id"])
         async def wait():
             async with self.session.get(self.url, headers=self.auth) as r:
                 text = await r.text()
@@ -59,9 +59,9 @@ class AsyncCampaign(TraffickingObject):
     def getAllCampaigns(self):
         def get(nextPageToken=None):
             if nextPageToken is None:
-                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/campaigns?subaccountId=23262&archived=false&searchString=2018".format(profile_id=self.profile_id)
+                self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/campaigns?subaccountId=23262&archived=false&searchString=2018".format(profile_id=self.profile_id)
             else:
-                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/campaigns?pageToken={pageToken}".format(profile_id=self.profile_id,pageToken = nextPageToken)
+                self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/campaigns?pageToken={pageToken}".format(profile_id=self.profile_id,pageToken = nextPageToken)
             return self.session
         async def wait():
             async with get().get(self.url, headers=self.auth) as r:
@@ -92,9 +92,9 @@ class AsyncCampaign(TraffickingObject):
     def getAllCreatives(self):
         def get(nextPageToken=None):
             if nextPageToken is None:
-                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/creatives?campaignId={campaign_id}".format(profile_id=self.profile_id,campaign_id=self.body["id"])
+                self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/creatives?campaignId={campaign_id}".format(profile_id=self.profile_id,campaign_id=self.body["id"])
             else:
-                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/creatives?pageToken={pageToken}".format(profile_id=self.profile_id,pageToken = nextPageToken)
+                self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/creatives?pageToken={pageToken}".format(profile_id=self.profile_id,pageToken = nextPageToken)
             return self.session
         async def wait():
             async with get().get(self.url, headers=self.auth) as r:
@@ -126,9 +126,9 @@ class AsyncCampaign(TraffickingObject):
     def getAllLMA(self):
         def get(nextPageToken=None):
             if nextPageToken is None:
-                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/campaigns?searchString=*LM".format(profile_id=self.profile_id)
+                self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/campaigns?searchString=*LM".format(profile_id=self.profile_id)
             else:
-                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/campaigns?pageToken={pageToken}".format(profile_id=self.profile_id,pageToken = nextPageToken)
+                self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/campaigns?pageToken={pageToken}".format(profile_id=self.profile_id,pageToken = nextPageToken)
             return self.session
         async def wait():
             async with get().get(self.url, headers=self.auth) as r:
@@ -158,7 +158,7 @@ class AsyncCampaign(TraffickingObject):
     
     @retry(wait_exponential_multiplier=10, wait_exponential_max=100)     
     def modifyVerification(self):
-        self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/campaigns?id={campaign_id}".format(profile_id=self.profile_id, campaign_id=self.body['id'])
+        self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/campaigns?id={campaign_id}".format(profile_id=self.profile_id, campaign_id=self.body['id'])
         requestBody = {"adBlockingConfiguration": {"enabled": True,"overrideClickThroughUrl": True,"clickThroughUrl": "https://smokeybear.com/en"}}
         async def wait():
             async with self.session.patch(self.url, headers=self.auth, data=self.json.dumps(requestBody)) as r:
@@ -183,7 +183,7 @@ class AsyncCampaign(TraffickingObject):
         requestBody = {"kind": "dfareporting#campaignCreativeAssociation",
                       "creativeId": creativeID}
         campaignID = self.body["id"]
-        self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{0}/campaigns/{1}/campaignCreativeAssociations".format(self.profile_id, campaignID)
+        self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{0}/campaigns/{1}/campaignCreativeAssociations".format(self.profile_id, campaignID)
         async def wait():
             async with self.session.post(self.url, headers=self.auth, data=self.json.dumps(requestBody)) as r:
                 text = await r.text()
@@ -203,7 +203,7 @@ class AsyncCampaign(TraffickingObject):
     @retry(wait_exponential_multiplier=10, wait_exponential_max=100)
     def getCreativeAssociation(self):
         campaignID = self.body["id"]
-        self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{0}/campaigns/{1}/campaignCreativeAssociations".format(self.profile_id, campaignID)
+        self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{0}/campaigns/{1}/campaignCreativeAssociations".format(self.profile_id, campaignID)
         async def wait():
             async with self.session.get(self.url, headers=self.auth) as r:
                 text = await r.text()
@@ -225,7 +225,7 @@ class AsyncCampaign(TraffickingObject):
     
     @retry(wait_exponential_multiplier=10, wait_exponential_max=100)
     def getAds(self):
-        self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/ads?campaignIds={campaignID}".format(profile_id=self.profile_id,campaignID=self.body["id"])
+        self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/ads?campaignIds={campaignID}".format(profile_id=self.profile_id,campaignID=self.body["id"])
         async def wait():
             async with self.session.get(self.url, headers=self.auth) as r:
                 text = await r.text()

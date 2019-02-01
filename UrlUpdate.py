@@ -9,7 +9,7 @@ Api = DCMAPI.DCMAPI()
 landingpages = LandingPageUtils.getAllDisplayLandingPages(Api)
 
 for page in landingpages:
-    if page["advertiserId"] != "4568611":
+    if page["advertiserId"] != "3876773":
         continue
     if "https://" not in page["url"]:
         url = re.sub("http","https",page["url"])
@@ -24,5 +24,6 @@ for page in landingpages:
 # print(payload)
 # currentCampaign.requests.patch(patchURL, headers=auth, data=currentCampaign.json.dumps(payload))
 # r = currentCampaign.requests.get(url)
+# add url report every Monday
 
 

@@ -20,9 +20,9 @@ class ChangeLogs(TraffickingObject):
     def getNewPlacements(self, changeTime):
         def get(nextPageToken=None):
             if nextPageToken is None:
-                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/changeLogs?action=action_create&objectType=OBJECT_PLACEMENT&minChangeTime={changeTime}".format(profile_id=self.profile_id, changeTime=changeTime)
+                self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/changeLogs?action=action_create&objectType=OBJECT_PLACEMENT&minChangeTime={changeTime}".format(profile_id=self.profile_id, changeTime=changeTime)
             else:
-                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/changeLogs?action=action_create&objectType=OBJECT_PLACEMENT&minChangeTime={changeTime}&pageToken={pageToken}".format(profile_id=self.profile_id, changeTime=changeTime,pageToken=nextPageToken)
+                self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/changeLogs?action=action_create&objectType=OBJECT_PLACEMENT&minChangeTime={changeTime}&pageToken={pageToken}".format(profile_id=self.profile_id, changeTime=changeTime,pageToken=nextPageToken)
             return self.session
         async def wait():
             async with get().get(self.url, headers=self.auth) as r:
@@ -39,7 +39,8 @@ class ChangeLogs(TraffickingObject):
                             if resp.status == 500:
                                 break
                     changeLog = [x for x in changeLog if "subaccountId" in x.keys()]
-                    changeLog = [x["objectId"] for x in changeLog if x['subaccountId'] == '23262' and "_SS_" in x['newValue']] 
+                    changeLog = [x for x in changeLog if x['subaccountId'] == '23262' ] 
+                    changeLog = [x["objectId"] for x in changeLog if  "_SS_" in x['newValue'] or "»SS»" in x['newValue']]
                     self.logs = changeLog   
                     print("%s total number of placements found created after %s" % (len(changeLog), changeTime))
                 else:
@@ -73,8 +74,8 @@ class ChangeLogs(TraffickingObject):
             import os
             directories = os.listdir()
             reports = [x for x in directories if "Campaign.xlsx" in x]
-            for report in reports:
-                send_mail.send_email(report, title="Verified Campaigns",recipients=["Lennon.Turner@amnetgroup.com","Kristine.Gillette@carat.com","Mackenzie.VanSteenkiste@carat.com","Holly.Champoux@carat.com"])
+            # for report in reports:
+            #     send_mail.send_email(report, title="Verified Campaigns",recipients=["Lennon.Turner@amnetgroup.com","Kristine.Gillette@carat.com","Mackenzie.VanSteenkiste@carat.com","Holly.Champoux@carat.com"])
         if len(self.logs) > 0:
             campaignArray = []
             from modules.AsyncCampaign import AsyncCampaign
@@ -88,9 +89,9 @@ class ChangeLogs(TraffickingObject):
     def getNewCampaigns(self, changeTime):
         def get(nextPageToken=None):
             if nextPageToken is None:
-                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/changeLogs?action=action_create&objectType=OBJECT_CAMPAIGN&minChangeTime={changeTime}".format(profile_id=self.profile_id, changeTime=changeTime)
+                self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/changeLogs?action=action_create&objectType=OBJECT_CAMPAIGN&minChangeTime={changeTime}".format(profile_id=self.profile_id, changeTime=changeTime)
             else:
-                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/changeLogs?action=action_create&objectType=OBJECT_CAMPAIGN&minChangeTime={changeTime}&pageToken={pageToken}".format(profile_id=self.profile_id, changeTime=changeTime,pageToken=nextPageToken)
+                self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/changeLogs?action=action_create&objectType=OBJECT_CAMPAIGN&minChangeTime={changeTime}&pageToken={pageToken}".format(profile_id=self.profile_id, changeTime=changeTime,pageToken=nextPageToken)
             return self.session
         
         async def wait():
@@ -148,14 +149,25 @@ class ChangeLogs(TraffickingObject):
                 if adName.strip() not in existingads:
                     modifiedAds.append(ad)
             return modifiedAds
-        def pullAdsIntoCampaign(campaign, modifiedAds=None):
-            englishAds = ["411816686","411815576", "411848029", "411816665"]
-            spanishAds = ["409389455", "409389461","410964991", "409389458"]
+        def pullAdsIntoCampaign(campaign, placement, modifiedAds=None):
+            print("pulling ads")
+            videocodes = ["»FP»","»NC»","»TV»","»VP»","»VO»","»VP»","»VS»"]
+            englishAds = ["431196351","431196357", "431196360", "431196366"]
+            spanishAds = ["431196348", "431196354","431196363", "431196345"]
+            videoAds = ["431196342","431196372","431196375","431196369"]
+            videoHispAds = ["433756626","433757505","433830394","433832422"]
             adsToUse = None
             if "Hispanic" in campaign.body["name"]:
                 adsToUse = spanishAds
             else:
                 adsToUse = englishAds
+            for code in videocodes:
+                if code in placement.body["name"]:
+                    if "Hispanic" in campaign.body["name"]:
+                        adsToUse = videoHispAds
+                    else:
+                        adsToUse = videoAds
+
             if modifiedAds != None or len(modifiedAds) == 0:
                 adsToUse = getModifiedAds(adsToUse, modifiedAds)
             for ads in adsToUse:
@@ -170,23 +182,23 @@ class ChangeLogs(TraffickingObject):
             placementObject = {"active":True, "placementIdDimensionValue":placement.body["idDimensionValue"], "sslRequired":placement.body["sslRequired"], "placementId":placement.body["id"]}
             if placementObject not in ad.body['placementAssignments']:
                 ad.body['placementAssignments'].append(placementObject)
-                ad.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/ads?id={adId}".format(profile_id=self.profile_id,adId=ad.body["id"])
+                ad.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/ads?id={adId}".format(profile_id=self.profile_id,adId=ad.body["id"])
                 payload = {"placementAssignments" : ad.body['placementAssignments']}
                 ad.insertPlacement(payload,placementObject, placement.body["campaignId"]).activateAd()
 
-        regex = re.compile(r'(\d+)LM\/')
+        regex = re.compile("[1-5]L(M|G)")
         for placmentID in range(0, len(self.logs)): 
             print("checking placement %s of %s" % (str(placmentID + 1), len(self.logs)))
             placement = Placement(self.logs[placmentID], self.eventLoop, self.session).getAdList()
             print(placement.body["name"])
             campaign = AsyncCampaign(placement.body['campaignId'], self.eventLoop, self.session)
             campaignName = campaign.body["name"]
-            if "_SS_" in placement.body["name"] and regex.search(campaignName):
+            if ("_SS_" in placement.body["name"] or "»SS»" in placement.body["name"] ) and regex.search(campaignName):
                 placement.getAdList()
-                placement.ads = [x for x in placement.ads if "TRACKING" in x["name"]]
+                placement.ads = [x for x in placement.ads if "TRACKING" in x["name"] and x["archived"] == False]
                 campaign.getAds()
-                trackingAdList = [x for x in campaign.adList if "TRACKING" in x["name"]]
-                print(len(trackingAdList))
+                trackingAdList = [x for x in campaign.adList if "TRACKING" in x["name"] and x["archived"] == False]
+                print("tracking ad length = : " + str(len(trackingAdList)))
                 if len(trackingAdList) > 4:
                     BonusAd = [x for x in campaign.adList if "TRACKING" in x["name"] and "Bonus" in x["name"]][0]
                     FirstAd = [x for x in campaign.adList if "TRACKING" in x["name"] and "First" in x["name"]][0]
@@ -194,7 +206,7 @@ class ChangeLogs(TraffickingObject):
                     GeneralAd = [x for x in campaign.adList if "TRACKING" in x["name"] and "General" in x["name"]][0]
                     trackingAdList = [BonusAd, HolidayAd, FirstAd, GeneralAd]
                 if len(trackingAdList) < 4:
-                    pullAdsIntoCampaign(campaign, trackingAdList)
+                    pullAdsIntoCampaign(campaign, placement, trackingAdList)
                     campaign.getAds()
                     trackingAdList = [x for x in campaign.adList if "TRACKING" in x["name"]]
                 numberOfAds = len(placement.ads)
@@ -228,14 +240,14 @@ class ChangeLogs(TraffickingObject):
             writer.save()
             import os
             directories = os.listdir()
-            reports = [x for x in directories if "Placement" in x]
+            reports = [x for x in directories if "Placement.xlsx" in x]
             for report in reports:
                 send_mail.send_email(report, title="LMA SS Placements",recipients=["Lennon.Turner@amnetgroup.com","Kristine.Gillette@carat.com","Holly.Champoux@carat.com","Ali.Ciaffone@carat.com"])
         from modules.Placements import Placement
         from modules.AsyncCampaign import AsyncCampaign
         changedPlacementsArray = []
         import re
-        regex = re.compile(r'(\d+)LM\/')
+        regex = re.compile("[1-5]L(M|G)")
         for placmentID in range(0, len(self.logs)): 
             print("checking placement %s of %s" % (str(placmentID + 1), len(self.logs)))
             placement = Placement(self.logs[placmentID], self.eventLoop, self.session)
@@ -258,9 +270,9 @@ class ChangeLogs(TraffickingObject):
         print(actualObject)
         def get(nextPageToken=None):
             if nextPageToken is None:
-                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/changeLogs?objectType={objectType}&minChangeTime={changeTime}".format(profile_id=self.profile_id, changeTime=changeTime, objectType=objectType)
+                self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/changeLogs?objectType={objectType}&minChangeTime={changeTime}".format(profile_id=self.profile_id, changeTime=changeTime, objectType=objectType)
             else:
-                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/changeLogs?&objectType={objectType}&minChangeTime={changeTime}&pageToken={pageToken}".format(profile_id=self.profile_id, changeTime=changeTime,pageToken=nextPageToken,objectType=objectType)
+                self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/changeLogs?&objectType={objectType}&minChangeTime={changeTime}&pageToken={pageToken}".format(profile_id=self.profile_id, changeTime=changeTime,pageToken=nextPageToken,objectType=objectType)
             return self.session
         async def wait():
             async with get().get(self.url, headers=self.auth) as r:
@@ -296,9 +308,9 @@ class ChangeLogs(TraffickingObject):
     def getAllCampaignChanges(self, changeTime):
         def get(nextPageToken=None):
             if nextPageToken is None:
-                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/changeLogs?action=ACTION_UPDATE&objectType=OBJECT_CAMPAIGN&minChangeTime={changeTime}".format(profile_id=self.profile_id, changeTime=changeTime)
+                self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/changeLogs?action=ACTION_UPDATE&objectType=OBJECT_CAMPAIGN&minChangeTime={changeTime}".format(profile_id=self.profile_id, changeTime=changeTime)
             else:
-                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/changeLogs?action=ACTION_UPDATE&objectType=OBJECT_CAMPAIGN&minChangeTime={changeTime}&pageToken={pageToken}".format(profile_id=self.profile_id, changeTime=changeTime,pageToken=nextPageToken)
+                self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/changeLogs?action=ACTION_UPDATE&objectType=OBJECT_CAMPAIGN&minChangeTime={changeTime}&pageToken={pageToken}".format(profile_id=self.profile_id, changeTime=changeTime,pageToken=nextPageToken)
             return self.session
         
         async def wait():

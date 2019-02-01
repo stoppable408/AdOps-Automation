@@ -15,7 +15,7 @@ class Placement(TraffickingObject):
     
     @retry(wait_exponential_multiplier=10, wait_exponential_max=100)     
     def getAdList(self):
-        self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/ads?placementIds={placementId}".format(profile_id=self.profile_id,placementId=self.body["id"])
+        self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/ads?placementIds={placementId}".format(profile_id=self.profile_id,placementId=self.body["id"])
         async def wait():
             async with self.session.get(self.url, headers=self.auth) as r:
                 text = await r.text()
@@ -36,7 +36,7 @@ class Placement(TraffickingObject):
         
     @retry(wait_exponential_multiplier=10, wait_exponential_max=100)     
     def pushStaticClickTracking(self):
-        self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/placements?id={placementId}".format(profile_id=self.profile_id,placementId=self.body["id"])
+        self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/placements?id={placementId}".format(profile_id=self.profile_id,placementId=self.body["id"])
         payload = {"tagSetting":{"includeClickThroughUrls": True,}}
         payloadText = '"includeClickThroughUrls": true'
         async def wait():
@@ -71,7 +71,7 @@ class Placement(TraffickingObject):
         
         try:
             PGID = self.body["placementGroupId"]
-            self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/placementGroups/{PGID}".format(profile_id=self.profile_id,PGID=PGID)
+            self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/placementGroups/{PGID}".format(profile_id=self.profile_id,PGID=PGID)
             if self.eventLoop == None:
                 self.eventLoop = self.asyncio.get_event_loop()
                 self.eventLoop.run_until_complete(wait())
@@ -86,7 +86,7 @@ class Placement(TraffickingObject):
         return self
     
     def listByCampaign(self, campaignID,separateByDimension=None):
-        self.url = "https://www.googleapis.com/dfareporting/v3.0/userprofiles/{profileId}/placements?campaignId={campaignID}".format(profileId=self.profile_id,campaignID=str(campaignID))
+        self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profileId}/placements?campaignId={campaignID}".format(profileId=self.profile_id,campaignID=str(campaignID))
         async def wait():
             async with self.session.get(self.url, headers=self.auth) as r:
                 text = await r.text()

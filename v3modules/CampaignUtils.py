@@ -8,16 +8,21 @@ def getCampaignByName(Api, listValues):
     campaignList = Api.generateRequestUrl("campaigns",listValues=listValues).getlist("campaigns").response
     return campaignList[0]
 
+def getCampaignList(Api, listValues):
+    campaignList = Api.generateRequestUrl("campaigns",listValues=listValues).getlist("campaigns").response
+    return campaignList
+
 def getAllLMA(Api):
-    listValues =[{"searchString":"1LM*","active":True,"archived":False},{"searchString":"2LM*","active":True,"archived":False},{"searchString":"3LM*","active":True,"archived":False},{"searchString":"4LM*","active":True,"archived":False},{"searchString":"5LM*","active":True,"archived":False}]
+    listValues =[{"searchString":"5LG*","active":True,"archived":False},{"searchString":"4LG*","active":True,"archived":False},{"searchString":"3LG*","active":True,"archived":False},{"searchString":"2LG*","active":True,"archived":False},{"searchString":"1LG*","active":True,"archived":False},{"searchString":"1LM*","active":True,"archived":False},{"searchString":"2LM*","active":True,"archived":False},{"searchString":"3LM*","active":True,"archived":False},{"searchString":"4LM*","active":True,"archived":False},{"searchString":"5LM*","active":True,"archived":False}]
     campaignList = []
     for obj in listValues:
         campaignList.extend(Api.generateRequestUrl("campaigns",listValues=obj).getlist("campaigns").response)
     return campaignList
 
 def getAllCampaigns(Api):
-    campaignList = Api.generateRequestUrl("campaigns",listValues={"searchString":"2018","active":True,"subaccountId":23262}).getlist("campaigns").response
+    campaignList = Api.generateRequestUrl("campaigns",listValues={"active":True,"subaccountId":23262}).getlist("campaigns").response
     return campaignList
+    # "searchString":"2018",
 
 def verifyCampaign(Api, campaignId):
     requestBody = {"adBlockingConfiguration": {"enabled": True,"overrideClickThroughUrl": True,"clickThroughUrl": "https://smokeybear.com/en"}}

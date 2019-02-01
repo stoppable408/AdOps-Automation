@@ -23,13 +23,19 @@ def floatToPercent(fl):
     try:
         if np.isnan(fl):
             return fl
-        return "%.0f%%" % (100 * fl)
+        if fl <= 1:
+            return "%.0f%%" % (100 * fl)
+        else: 
+            return "%.0f%%" % (fl)
     except:
         return fl
 
 def checkPlacementEndDate(date):
     today = datetime.datetime.now()
-    placementDate = datetime.datetime.strptime(date, "%m/%d/%Y")
+    try:
+        placementDate = datetime.datetime.strptime(date, "%m/%d/%Y")
+    except:
+        placementDate = datetime.datetime.strptime(date, "%Y-%m-%d")
     return today > placementDate
 
 def datetimeToDate(date):
@@ -84,11 +90,15 @@ def updateSheet(sheet, placementList):
     sheet["End Date"] = sheet["End Date"].apply(datetimeToDate)
     DCMidList = set([int(x["id"]) for x in placementList])
     CSDidList = set(sheet["Id"].tolist())
+    campaignName = sheet.iloc[0]["Campaign"]
     placementsToAdd = DCMidList.difference(CSDidList)
     # placementsToRemove = CSDidList.difference(DCMidList)
     for placement in CSDidList.copy():
+        currentPlacement = PlacementUtils.getPlacement(Api, placement)
+        print(currentPlacement["name"])
         CSDPlacement = sheet[sheet.Id == placement]
-        if checkPlacementEndDate(CSDPlacement["End Date"].values[0]):
+        if checkPlacementEndDate(currentPlacement["pricingSchedule"]["endDate"]):
+            CSDPlacement["End Date"] = currentPlacement["pricingSchedule"]["endDate"]
             RemovedPlacements=RemovedPlacements.append(CSDPlacement)
             sheet = sheet[sheet.Id != placement]
     CSDidList = set(sheet["Id"].tolist())
@@ -96,8 +106,15 @@ def updateSheet(sheet, placementList):
     for placement in CSDidList.copy():
         CSDPlacement = sheet[sheet.Id == placement]
         currentPlacement = PlacementUtils.getPlacement(Api, placement)
+        print(currentPlacement["name"])
         indexOfPlacement = sheet[sheet.Id == placement].index[0] + 2
         if placement in DCMidList:
+            if checkPlacementEndDate(currentPlacement["pricingSchedule"]["endDate"]):
+                CSDPlacement["End Date"] = currentPlacement["pricingSchedule"]["endDate"]
+                RemovedPlacements=RemovedPlacements.append(CSDPlacement)
+                sheet = sheet[sheet.Id != placement]
+                sheet = sheet.reset_index(drop=True)
+                continue
             DCMidList.remove(placement)
             CSDidList.remove(placement)
             CSDPlacementInfo = {"D":CSDPlacement["Name"].values[0], "E":CSDPlacement["Start Date"].values[0], "F":CSDPlacement["End Date"].values[0], "H":CSDPlacement["Dimensions"].values[0]}
@@ -115,13 +132,13 @@ def updateSheet(sheet, placementList):
                     ChangesArray.append({"column":rowColumn,"data":DCMPlacementInfo[column],"format":yellow})
                 print(column, CSDPlacementInfo[column])
                 print(column, DCMPlacementInfo[column])
-        
     if placementsToAdd:
         #RowNum accounts for the fact that the Dataframe is 0-indexed, and the Headers are removed. 
         rowNum = len(sheet) + 2 
-        campaignName = sheet.iloc[0]["Campaign"]
         for placement in placementsToAdd:
             currentPlacement = PlacementUtils.getPlacement(Api, placement)
+            if checkPlacementEndDate(currentPlacement["pricingSchedule"]["endDate"]):
+                continue
             DCMPlacementInfo = {"A":campaignName,"B":PlacementUtils.getAndFormatSite(Api,currentPlacement),"C":placement,"D":currentPlacement["name"], "E":UtilUtils.formatPlacementDate(currentPlacement["pricingSchedule"]["startDate"]), "F":UtilUtils.formatPlacementDate(currentPlacement["pricingSchedule"]["endDate"]),"G":currentPlacement["compatibility"].capitalize(), "H":determineDimensions(currentPlacement)}
             for column in DCMPlacementInfo:
                 rowColumn = "{column}{indexOfPlacement}".format(column=column,indexOfPlacement=rowNum)
@@ -143,6 +160,7 @@ def updateSheet(sheet, placementList):
 
 
 for file in fileList:
+    print(file)
     excel = pd.read_excel(file, sheet_name=None)
     writer = pd.ExcelWriter('Merged_%s' % (file),engine='xlsxwriter')
     workbook = writer.book
@@ -205,7 +223,7 @@ for file in fileList:
             SSworksheet.write(obj["column"],obj["data"],obj["format"])
 
     if len(RemovedPlacements) > 0:
-        RemovedPlacements = RemovedPlacements[['Campaign', 'Site', 'Id', 'Name', 'Start Date', 'End Date', 'Compatibility', 'Dimensions', 'Creative Rotation', 'Creative File 1', 'Creative File 2', 'Creative File 3', 'Creative File 4', 'Creative File 5', 'Creative Feed Name']]
+        RemovedPlacements = RemovedPlacements[['Campaign', 'Site', 'Id', 'Name', 'Start Date', 'End Date', 'Compatibility', 'Dimensions', 'Creative Rotation', 'Creative File 1', 'Creative File 2', 'Creative File 3', 'Creative File 4', 'Creative File 5']]
         RemovedPlacements.to_excel(writer, sheet_name="Ended Placements",index=False)
         RemovedPlacementsheet = writer.sheets['Ended Placements']
         for obj in headerObject:

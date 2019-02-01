@@ -11,13 +11,13 @@ class Campaign(TraffickingObject):
         
     @retry(wait_exponential_multiplier=10, wait_exponential_max=100)     
     def getAllLMA(self):
-        self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/campaigns?searchString=*LM/".format(profile_id=self.profile_id)
+        self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/campaigns?searchString=*LM/".format(profile_id=self.profile_id)
         r = self.requests.get(self.url, headers=self.auth)
         if r.status_code == 200:
             response = self.json.loads(r.text)
             campaignList = response["campaigns"]
             while "nextPageToken" in response:
-                self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/campaigns?pageToken={pageToken}".format(profile_id=self.profile_id,pageToken = response["nextPageToken"])
+                self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/campaigns?pageToken={pageToken}".format(profile_id=self.profile_id,pageToken = response["nextPageToken"])
                 r = self.requests.get(self.url, headers=self.auth)
                 if r.status_code == 200:
                     response = self.json.loads(r.text)
@@ -33,7 +33,7 @@ class Campaign(TraffickingObject):
     @retry(wait_exponential_multiplier=10, wait_exponential_max=100)     
     def getPlacementList(self):
         print("start")
-        self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/placements?campaignIds={campaignId}".format(profile_id=self.profile_id,campaignId=self.body["id"])
+        self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/placements?campaignIds={campaignId}".format(profile_id=self.profile_id,campaignId=self.body["id"])
         r = self.requests.get(self.url, headers=self.auth)
         print(r)
         if r.status_code == 200:

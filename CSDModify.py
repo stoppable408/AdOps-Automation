@@ -1,6 +1,9 @@
+#Update to add Site Contacts
 from v3modules.DCMAPI import DCMAPI
 counters = 0
 Api = DCMAPI()
+Evidon = ["EV1","EV2","EV3","EVD","EVG","EVL","EVR","EVS","EVA","EVT","EVC","GAC","LMA","LMR","LMC"]
+LMA = ["1LM","2LM","3LM","4LM","5LM","1LG","2LG","3LG","4LG","5LG"]
 def analyzeFile(file_name):
     
     import pandas as pd
@@ -8,7 +11,7 @@ def analyzeFile(file_name):
     import numpy as np
     import openpyxl
     import re
-
+    LMAOverride = False
     if ".csv" in file_name:
         csv = pd.read_csv(file_name)
         file_name = re.sub('.csv','.xlsx',file_name)
@@ -20,7 +23,15 @@ def analyzeFile(file_name):
 
     csv.fillna('N/A',inplace=True)
     
-    
+    def isEvidon(placementName):
+        nonlocal LMAOverride
+        if LMAOverride == True:
+            return "Y"
+        for string in Evidon:
+            if string in placementName:
+                return "Y"
+        return "N"
+
     def nameChange(name, site):
         global counters
         
@@ -29,6 +40,9 @@ def analyzeFile(file_name):
         if "Carat_" in name:
             site = re.sub(r'\(\d+\)',"", site).strip() + "_"
             name = re.sub("Carat_", site, name)
+            name = re.sub("Â","",name)
+        else:
+            name = re.sub("Â","",name)
         counters += 1
         return name
         
@@ -53,14 +67,21 @@ def analyzeFile(file_name):
     csv["Start date"] = csv["Start date"].apply(dateTimetoDate)
     csv["End date"] = csv["End date"].apply(dateTimetoDate)
     csv["Name"] = csv["Name"].apply(nameChange, args=(csv["Site"],))
+    csv["Evidon"] = csv["Name"].apply(isEvidon)
     csv = csv[csv['Compatibility'] != 'N/A']
-    try:
-        placementID = csv["Id"].iloc[0]
-    except:
-        placementID = csv_ss_placement["Id"].iloc[0]
+    placementID = csv["Id"].iloc[0]
     placement = PlacementUtils.getPlacement(Api, placementID)
     campaignID = placement['campaignId']
     campaign = CampaignUtils.getCampaign(Api, campaignID)["name"]
+
+    temp = file_name.split("_")
+    temp.insert(1,re.sub("/","",campaign.split("_")[0]))
+    file_name = "_".join(temp)
+
+
+    for code in LMA:
+        if code in campaign:
+            LMAOverride = True
     #campaign = campaignName
     csv['Campaign'] = campaign
     csv['Creative Rotation'] = np.nan
@@ -83,8 +104,15 @@ def analyzeFile(file_name):
     
     def getDimensions(placement):
         if type(placement) is str:
-            return str(placement).split("_")[3]
-    
+            try:
+                return str(placement).split("_")[3]
+            except:
+                dimensions = str(placement).split("»")[5]
+                if "T1" in dimensions:
+                    dimensions = "120+N/A"
+                else:
+                    dimensions = re.sub("NA\+","",dimensions)
+                return dimensions
         
     csv_ss_placement["Dimensions"] = csv_ss_placement["Name"].apply(getDimensions)
     csv["Dimensions"] = csv["Name"].apply(getDimensions)
@@ -120,11 +148,11 @@ def analyzeFile(file_name):
     writer = pd.ExcelWriter('Output/%s' % (file_name),engine='xlsxwriter')
     workbook = writer.book
     
-    headerObject = {"A1":"Campaign", "B1":"Site", "C1":"Id", "D1":"Name","E1":"Start Date","F1":"End Date","G1":"Compatibility","H1":"Dimensions","I1":"Creative Rotation","J1":"Creative File 1","K1":"Creative File 2","L1":"Creative File 3","M1":"Creative File 4","N1":"Creative File 5"}
+    headerObject = {"A1":"Campaign", "B1":"Site", "C1":"Id", "D1":"Name","E1":"Start Date","F1":"End Date","G1":"Compatibility","H1":"Dimensions","I1":"Evidon","J1":"Creative Rotation","K1":"Creative File 1","L1":"Creative File 2","M1":"Creative File 3","N1":"Creative File 4","O1":"Creative File 5"}
     urlObject = {'A1':"Creative File", "B1":"Creative URL"}
     siteObject = {'A' + str(siteRow):"Site", 'B' + str(siteRow):"Contact"}
     format1 =  workbook.add_format({'bg_color': '#0AADE9'})
-
+    
     if len(csv) != 0:
         csv.to_excel(writer, sheet_name='TPS Placements',index=False)
         worksheet_csv = writer.sheets['TPS Placements']

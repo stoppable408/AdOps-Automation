@@ -9,6 +9,9 @@ def listAd(Api, listValues=None,filter=False):
         adList = [x for x in adList if "Brand-neutral" not in x['name'] and "TRACKING" not in x["name"] and x["active"] == True and "AD_SERVING_DEFAULT_AD" not in x["type"] and "AD_SERVING_TRACKING" not in x["type"]]
     return adList
 
+def updateAd(Api, adId, payload):
+    Api.generateRequestUrl("ads",listValues={"id":adId}).patch(payload)
+
 def insertEventTag(Api, adId, payload):
     currentAd = getAd(Api, adId)
     try:
@@ -19,12 +22,28 @@ def insertEventTag(Api, adId, payload):
     eventTagOverrides = {"eventTagOverrides":tagArray}
     Api.generateRequestUrl("ads",listValues={"id":adId}).patch(eventTagOverrides)
 
+def inheritEventTag(Api, adId, payload):
+    eventTagProperties = {"defaultClickThroughEventTagProperties":payload}
+    Api.generateRequestUrl("ads",listValues={"id":adId}).patch(eventTagProperties)
+
+def disinheritEventTag(Api, adId, payload):
+    eventTagProperties = {"defaultClickThroughEventTagProperties":{}}
+    Api.generateRequestUrl("ads",listValues={"id":adId}).patch(eventTagProperties)
+
+def removeEventTag(Api, adId, payload):
+    currentAd = getAd(Api, adId)
+    finalTagArray = [x for x in currentAd["eventTagOverrides"] if x != payload ]
+    eventTagOverrides = {"eventTagOverrides":finalTagArray}
+    Api.generateRequestUrl("ads",listValues={"id":adId}).patch(eventTagOverrides)
+    # eventTagOverrides = {"defaultClickThroughEventTagProperties":None}
+    # Api.generateRequestUrl("ads",listValues={"id":adId}).patch(eventTagOverrides)
+
 def activateAd(adId, Api):
     payload = {"active":True}
     Api.generateRequestUrl("ads",listValues={"id":adId}).patch(payload)
 
 def deactivateAd(adId, Api):
-    payload = {"active":False}
+    payload = {"active":False, "archived":True}
     Api.generateRequestUrl("ads",listValues={"id":adId}).patch(payload)
 
 def getCreatives(Api, adId):
@@ -37,7 +56,7 @@ def getCreatives(Api, adId):
 
 def copy(Api, adId, campaignID):
     from datetime import datetime, timedelta
-    import CampaignUtils
+    from v3modules import CampaignUtils
     ad = getAd(Api, adId)
     startTime = (datetime.now() + timedelta(days=1)).isoformat() + "Z"
     adCopy = {"name": ad['name'],"campaignId":campaignID, 'endTime': ad["endTime"], "startTime": startTime, 'type':  ad["type"],  'kind': ad['kind'], 'creativeRotation': ad['creativeRotation'], "deliverySchedule":ad["deliverySchedule"], 'sslRequired': ad['sslRequired'], 'sslCompliant':ad['sslCompliant'], 'clickThroughUrlSuffixProperties': ad['clickThroughUrlSuffixProperties'], "placementAssignments":[], "active":False} 
@@ -57,10 +76,12 @@ def associatePlacement(ad,placement, Api):
         ad["placementAssignments"]
     except:
         ad["placementAssignments"] = []
-    placementObject = {"active":True, "placementIdDimensionValue":placement.body["idDimensionValue"], "sslRequired":placement.body["sslRequired"], "placementId":placement.body["id"]}
-    if placementObject not in ad.body['placementAssignments']:
+    placementObject = {"active":True, "placementIdDimensionValue":placement["idDimensionValue"], "sslRequired":placement["sslRequired"], "placementId":placement["id"]}
+    if placementObject not in ad['placementAssignments']:
         ad['placementAssignments'].append(placementObject)
         payload = {"placementAssignments" : ad['placementAssignments']}
         Api.generateRequestUrl("ads",listValues={"id":ad["id"]}).patch(payload)
-        activateAd(Api, ad["id"])
+        activateAd(ad["id"], Api)
+
+
 

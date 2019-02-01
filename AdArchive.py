@@ -1,5 +1,6 @@
 from v3modules import CampaignUtils, DCMAPI, AdUtils, UtilUtils
 import datetime
+import pandas as pd
 
 
 Api = DCMAPI.DCMAPI()
@@ -19,3 +20,10 @@ for campaign in LMACampaigns:
         AdUtils.deactivateAd(ad["id"], Api)
         AdList.append({"name":ad["name"], "id":ad["id"]})
 
+df = pd.DataFrame(data=AdList)
+writer = pd.ExcelWriter('Archived Ads Report.xlsx',engine='xlsxwriter')
+workbook = writer.book
+df.to_excel(writer, sheet_name ="Info", index = False)
+worksheet =  writer.sheets['Info']
+writer.save()
+    

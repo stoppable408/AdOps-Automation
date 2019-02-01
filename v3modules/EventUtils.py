@@ -7,5 +7,7 @@ def listEvents(Api, listValues=None):
     EventList = Api.generateRequestUrl("eventTags",listValues=listValues).getlist("eventTags").response
     return EventList
 
+def deleteEvent(Api, EventId):
+    Api.generateRequestUrl("eventTags",objectId=EventId).delete()
 def insertEvent(Api, eventBody):
     Api.generateRequestUrl("eventTags").post(eventBody)

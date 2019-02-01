@@ -15,16 +15,23 @@ class DCMAPI():
         import httplib2
         from oauth2client import file as oauthFile
         try:
-            storage = oauthFile.Storage(os.getcwd() + "\\v3modules\dfareporting.dat")
-            credentials = storage.get()
-            credentials.refresh(httplib2.Http())
-            self.profile_id, self.auth = 2532624 , {'Content-type': 'application/json', "Authorization": "OAuth %s" % credentials.access_token}
+            reportingstorage = oauthFile.Storage(os.getcwd() + "\\v3modules\dfareporting.dat")
+            traffickingstorage = oauthFile.Storage(os.getcwd() + "\\v3modules\dfatrafficking.dat")
+            reportingcredentials = reportingstorage.get()
+            traffickingcredentials = traffickingstorage.get()
+            reportingcredentials.refresh(httplib2.Http())
+            traffickingcredentials.refresh(httplib2.Http())
+            self.profile_id, self.reportingauth, self.traffickingauth = 2532624 , {'Content-type': 'application/json', "Authorization": "OAuth %s" % reportingcredentials.access_token}, {'Content-type': 'application/json', "Authorization": "OAuth %s" % traffickingcredentials.access_token}
         except Exception as e:
             print(e)
             print("dfa file not found")
 
     #Function to generate a request URL for objects in DCM
     def generateRequestUrl(self, objectType,objectId=None,listValues=None,secondaryObjectType=None):
+        if objectType == "reports":
+            self.auth = self.reportingauth
+        else:
+            self.auth = self.traffickingauth
         def dictToString(listValues):
             emptyString = ""
             for value in listValues:
@@ -52,9 +59,15 @@ class DCMAPI():
             return self
         else:
             errormessage = response["error"]["message"]
-            if "Invalid" in errormessage:
+            if "Invalid" in errormessage or "Backend" in errormessage:
+                print(errormessage)
+                print(self.url)
                 print("getting new credentials")
                 self.getToken()
+                if "reports" in self.url:
+                    self.auth = self.reportingauth
+                else:
+                    self.auth = self.traffickingauth
                 return self.get()
             else:
                 print(errormessage)
@@ -63,28 +76,47 @@ class DCMAPI():
     def insert(self, body):
         r = self.requests.post(self.url, headers=self.auth, data=self.json.dumps(body))
         response = self.json.loads(r.text)
+        try:
+            obj = response["name"]
+        except:
+            obj = response["kind"]
         if r.status_code == 200:
-            print("successfully inserted {objectType}".format(objectType=response["kind"]))
+            self.response = response
+
+            print("successfully inserted {objectType}".format(objectType=obj))
             return self        # Finish function declaration when the need arises to insert. Don't quite know how to do it yet, and I haven't had an opportunity to insert something
         else:
-            print("successfully inserted {objectType}".format(objectType=response["kind"]))        # Finish function declaration when the need arises to insert. Don't quite know how to do it yet, and I haven't had an opportunity to insert something
+            print("successfully inserted {objectType}".format(objectType=obj))        # Finish function declaration when the need arises to insert. Don't quite know how to do it yet, and I haven't had an opportunity to insert something
+
+
+
+
+
+
+
+
+
+
 
 
     #Function to get a list of objects, similar to the "get" function above, but with extra functionality for requests that have more than 1000 results
-    def getlist(self, objectType,secondaryObjectType=None,objectId=None):
+    def getlist(self, objectType,secondaryObjectType=None,objectId=None,requiredParameter=None):
         nextPageSet = set()
         if secondaryObjectType != None:
             key = self.url.split("/")[-1]
         else:
             key = objectType
-        def get(nextPageToken=None):
+        def get(nextPageToken=None, requiredParameter=None):
             if nextPageToken is not None:
-                if secondaryObjectType == None:
+                if secondaryObjectType == None and requiredParameter == None:
                     self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/{objectType}?pageToken={pageToken}".format(profile_id=self.profile_id,pageToken = nextPageToken,objectType=objectType)
+                elif requiredParameter != None:
+                    self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/{objectType}?{query}&pageToken={pageToken}".format(profile_id=self.profile_id,pageToken = nextPageToken,objectType=objectType, query=requiredParameter)
                 else:
                     self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/{objectType}/{objectId}/{secondaryObjectType}?pageToken={pageToken}".format(profile_id=self.profile_id,pageToken = nextPageToken,objectType=objectType,objectId=objectId,secondaryObjectType=secondaryObjectType)
             return self.requests        
         r = get().get(self.url, headers=self.auth)
+        
         response = self.json.loads(r.text)
         if r.status_code == 200:
             responseList = response[key]
@@ -92,17 +124,27 @@ class DCMAPI():
                 if response['nextPageToken'] in nextPageSet:
                     break
                 nextPageSet.add(response['nextPageToken'])
-                resp = get(response["nextPageToken"]).get(self.url, headers=self.auth)
+                if requiredParameter == None:
+                    resp = get(response["nextPageToken"]).get(self.url, headers=self.auth)
+                else:
+                    resp = get(response["nextPageToken"], requiredParameter).get(self.url, headers=self.auth)
                 if resp.status_code == 200:
+                    print("response")
+
                     response = self.json.loads(resp.text)
                     responseList.extend(response[key])
             self.response = responseList
             return self
         else:
             errormessage = response["error"]["message"]
-            if "Invalid" in errormessage:
+            if "Invalid" in errormessage or "Backend" in errormessage:
+                print(errormessage)
                 print("getting new credentials")
                 self.getToken()
+                if "reports" in self.url:
+                    self.auth = self.reportingauth
+                else:
+                    self.auth = self.traffickingauth
                 return self.getlist(objectType,secondaryObjectType,objectId)
             else:
                 print(errormessage)
@@ -117,7 +159,7 @@ class DCMAPI():
             try:
                 print("{0} failed to update.".format(response['name']))
             except:
-                print("error reached.")
+                print(response["error"]["message"])
 
     def post(self,body):
         r = self.requests.post(self.url, headers=self.auth, data=self.json.dumps(body))
@@ -130,4 +172,18 @@ class DCMAPI():
                 print("{0} failed to insert.".format(response['name']))
             except Exception as e:
                 print(e)
+                print("error reached.")
+
+
+    def delete(self):
+        r = self.requests.delete(self.url, headers=self.auth)
+        if r.status_code == 200 or r.status_code == 204:
+            print("item deleted successfully")
+            return self
+        else:
+            try:
+                print(r.text)
+                print("item failed to delete.")
+
+            except Exception as e:
                 print("error reached.")

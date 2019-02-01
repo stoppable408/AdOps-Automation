@@ -59,7 +59,7 @@ class TraffickingObject(metaclass=ABCMeta):
             self.session = session
         else:
             self.getToken()
-        self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/{className}?searchString={searchString}".format(className=className,profile_id=self.profile_id,searchString=searchString)
+        self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/{className}?searchString={searchString}".format(className=className,profile_id=self.profile_id,searchString=searchString)
         async def wait():
             async with self.session.get(self.url, headers=self.auth) as r:
                 text = await r.text()

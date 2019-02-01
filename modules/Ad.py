@@ -59,7 +59,7 @@ class Ad(TraffickingObject):
     @retry(wait_exponential_multiplier=10, wait_exponential_max=100) 
     def activateAd(self):
         payload = {"active":True}
-        self.url = "https://www.googleapis.com/dfareporting/v2.8/userprofiles/{profile_id}/ads?id={adId}".format(profile_id=self.profile_id,adId=self.body["id"])
+        self.url = "https://www.googleapis.com/dfareporting/v3.1/userprofiles/{profile_id}/ads?id={adId}".format(profile_id=self.profile_id,adId=self.body["id"])
         async def wait():
             async with self.session.patch(self.url, headers=self.auth, data=self.json.dumps(payload)) as r:
                 text = await r.text()

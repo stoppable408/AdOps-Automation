@@ -34,7 +34,40 @@ def formatPlacementDate(placementDate):
     import datetime
     return datetime.datetime.strptime(placementDate, "%Y-%m-%d").strftime("%m/%d/%Y")
 
+def placementDateToDatetime(placementDate):
+    import datetime
+    return datetime.datetime.strptime(placementDate, "%Y-%m-%d")
+
+
+def TimestampToPlacementDate(placementDate):
+    return placementDate.strftime("%m/%d/%Y")
+
 def getBeginningofWeek():
     from datetime import datetime, timedelta
-    currentdate = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    currentdate = (datetime.now() - timedelta(days=4)).strftime("%Y-%m-%dT%H:%M:%SZ")
     return currentdate
+
+def getBeginningofYear():
+    from datetime import datetime
+    beginningOfYear = datetime(2018, 1,1).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return beginningOfYear
+
+def getYesterday():
+    from datetime import datetime, timedelta
+    currentdate = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z")
+    return currentdate
+
+def datetimeToString(dt):
+    import datetime
+    timeZoneCorrection =  datetime.timedelta(hours = 3)
+    dt = dt + timeZoneCorrection
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def datetimeToStringNoCorrection(dt):
+    import datetime
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def stringToDateTimeObject(string):
+    import datetime
+    return datetime.datetime.strptime(string, "%Y-%m-%dT%H:%M:%S.%fZ")
+

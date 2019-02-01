@@ -5,7 +5,7 @@ import requests
 import pandas as pd
 def getBeginningofWeek():
     from datetime import datetime, timedelta
-    currentdate = (datetime.now() - timedelta(days=6)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    currentdate = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
     return currentdate
 
 currentDate = getBeginningofWeek()
